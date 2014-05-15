@@ -9,9 +9,9 @@ Ext.define('CustomApp', {
 
 	config: {
 		defaultSettings: {
-			itemtype : 'Goal',
-			items : '', // TH2594
-			unittype : 'Count',
+			itemtype : 'Theme',
+			items : 'TH2594', // TH2594
+			unittype : 'Points',
 			stateField : 'ScheduleState'
 		}
 	},
@@ -112,6 +112,7 @@ Ext.define('CustomApp', {
             		// states : ["Idea","Defined","In-Progress","Completed","Accepted","Released"],
             		states : app.fieldAllowedValues,
             		unitType : app.unittype,
+            		title : pis[0].get("FormattedID") + "-" + pis[0].get("Name")
 				});
 
 				var chart = app.down("#chart1");
@@ -230,7 +231,7 @@ Ext.define('CustomApp', {
 					autoLoad : true,
 					pageSize:1000,
 					limit: 'Infinity',
-					fetch: ['ScheduleState','FormattedID','ObjectID','_ValidFrom','_ValidTo'],
+					fetch: ['ScheduleState','FormattedID','ObjectID','_ValidFrom','_ValidTo','PlanEstimate'],
 					hydrate: ['ScheduleState'],
 					listeners : {
 						scope : this,

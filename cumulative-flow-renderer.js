@@ -10,6 +10,7 @@ Ext.define("CumulativeFlowRenderer", function() {
             stateField : "",
             states : [],
             unitType : "Count",
+            title : 'Portfolio Item Cumulative Flow Chart'
         },
 
         constructor:function(config) {
@@ -30,11 +31,12 @@ Ext.define("CumulativeFlowRenderer", function() {
                         metrics.push({
                             as : state,
                             f : self.unitType==='Points' ? 'filteredSum' : 'filteredCount',
-                            field : self.unitType==='Points' ? self.stateField : 'ObjectID',
+                            field : self.unitType==='Points' ? 'PlanEstimate' : 'ObjectID',
                             filterField : self.stateField,
                             filterValues : [state],
                         });
-                    })
+                    });
+                    console.log("metrics",metrics);
                     return metrics;
                 },
             });
@@ -47,10 +49,11 @@ Ext.define("CumulativeFlowRenderer", function() {
             // var snapShotData = _.map(self.snapshots,function(d){return d.data;});
             var snapShotData = self.snapshots;
             var calc = self.getCalculator();
+            var metrics = calc.getMetrics();
 
             var config = {
                 deriveFieldsOnInput: [],
-                metrics: calc.getMetrics(),
+                metrics: metrics,
                 summaryMetricsConfig: [],
                 deriveFieldsAfterSummary: calc.getDerivedFieldsAfterSummary(),
                 granularity: lumenize.Time.DAY,
@@ -69,7 +72,7 @@ Ext.define("CumulativeFlowRenderer", function() {
 
             // create a high charts series config object, used to get the hc series data
             var hcConfig = [{ name : "label" }];
-            _.each( _.map( calc.getMetrics(), function(m) { 
+            _.each( _.map( metrics, function(m) { 
                 return {
                     name : m.as,
                     type : "area",
@@ -78,7 +81,6 @@ Ext.define("CumulativeFlowRenderer", function() {
             }), function(c) { hcConfig.push(c);});
 
             var hc = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
-            var metrics = calc.getMetrics();
 
             // nullify data values that are outside of the planned start/end date range.
             _.each(metrics,function(m,i){
@@ -93,7 +95,7 @@ Ext.define("CumulativeFlowRenderer", function() {
             return hc;
         },
 
-        createChart : function(id,title) {
+        createChart : function(id) {
 
             var series = self.getChartConfig();
             var tickInterval = series[1].data.length <= (7*20) ? 7 : (series[1].data.length / 10);
@@ -116,7 +118,7 @@ Ext.define("CumulativeFlowRenderer", function() {
                 style : {
                     fontSize: '10px'
                 },
-                text: title,
+                text: self.title,
                 x: -20 //center
                 },
                 plotOptions: {
@@ -149,7 +151,7 @@ Ext.define("CumulativeFlowRenderer", function() {
                 },
                 yAxis: {
                     title: {
-                        text: 'count'
+                        text: self.unitType
                     },
                     plotLines: [{
                         value: 0,
