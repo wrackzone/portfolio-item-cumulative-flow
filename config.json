@@ -1,0 +1,15 @@
+{
+   "name": "portfolio-item-cumulative-flow",
+   "className": "CustomApp",
+   "server": "https://rally1.rallydev.com",
+   "sdk": "2.0rc2",
+   "javascript": [
+      "App.js",
+      "cumulative-flow-renderer.js",
+      "lib/async.min.js",
+      "https://rally1.rallydev.com/apps/2.0rc1/lib/analytics/analytics-all.js"
+   ],
+   "css": [
+      "app.css"
+   ]
+}
