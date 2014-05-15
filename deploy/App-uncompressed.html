@@ -8,7 +8,9 @@
 
     <script type="text/javascript">
         Rally.onReady(function () {
-                var app = null;
+                // Author: Barry Mullan (bmullan@rallydev.com)
+
+var app = null;
 
 Ext.define('CustomApp', {
 	extend: 'Rally.app.App',
@@ -19,9 +21,9 @@ Ext.define('CustomApp', {
 
 	config: {
 		defaultSettings: {
-			itemtype : 'Goal',
-			items : '', // TH2594
-			unittype : 'Count',
+			itemtype : 'Theme',
+			items : 'TH2594', // TH2594
+			unittype : 'Points',
 			stateField : 'ScheduleState'
 		}
 	},
@@ -122,6 +124,7 @@ Ext.define('CustomApp', {
             		// states : ["Idea","Defined","In-Progress","Completed","Accepted","Released"],
             		states : app.fieldAllowedValues,
             		unitType : app.unittype,
+            		title : pis[0].get("FormattedID") + "-" + pis[0].get("Name")
 				});
 
 				var chart = app.down("#chart1");
@@ -240,7 +243,7 @@ Ext.define('CustomApp', {
 					autoLoad : true,
 					pageSize:1000,
 					limit: 'Infinity',
-					fetch: ['ScheduleState','FormattedID','ObjectID','_ValidFrom','_ValidTo'],
+					fetch: ['ScheduleState','FormattedID','ObjectID','_ValidFrom','_ValidTo','PlanEstimate'],
 					hydrate: ['ScheduleState'],
 					listeners : {
 						scope : this,
@@ -268,6 +271,7 @@ Ext.define('CustomApp', {
             stateField : "",
             states : [],
             unitType : "Count",
+            title : 'Portfolio Item Cumulative Flow Chart'
         },
 
         constructor:function(config) {
@@ -288,11 +292,12 @@ Ext.define('CustomApp', {
                         metrics.push({
                             as : state,
                             f : self.unitType==='Points' ? 'filteredSum' : 'filteredCount',
-                            field : self.unitType==='Points' ? self.stateField : 'ObjectID',
+                            field : self.unitType==='Points' ? 'PlanEstimate' : 'ObjectID',
                             filterField : self.stateField,
                             filterValues : [state],
                         });
-                    })
+                    });
+                    console.log("metrics",metrics);
                     return metrics;
                 },
             });
@@ -305,10 +310,11 @@ Ext.define('CustomApp', {
             // var snapShotData = _.map(self.snapshots,function(d){return d.data;});
             var snapShotData = self.snapshots;
             var calc = self.getCalculator();
+            var metrics = calc.getMetrics();
 
             var config = {
                 deriveFieldsOnInput: [],
-                metrics: calc.getMetrics(),
+                metrics: metrics,
                 summaryMetricsConfig: [],
                 deriveFieldsAfterSummary: calc.getDerivedFieldsAfterSummary(),
                 granularity: lumenize.Time.DAY,
@@ -327,7 +333,7 @@ Ext.define('CustomApp', {
 
             // create a high charts series config object, used to get the hc series data
             var hcConfig = [{ name : "label" }];
-            _.each( _.map( calc.getMetrics(), function(m) { 
+            _.each( _.map( metrics, function(m) { 
                 return {
                     name : m.as,
                     type : "area",
@@ -336,7 +342,6 @@ Ext.define('CustomApp', {
             }), function(c) { hcConfig.push(c);});
 
             var hc = lumenize.arrayOfMaps_To_HighChartsSeries(calculator.getResults().seriesData, hcConfig);
-            var metrics = calc.getMetrics();
 
             // nullify data values that are outside of the planned start/end date range.
             _.each(metrics,function(m,i){
@@ -351,7 +356,7 @@ Ext.define('CustomApp', {
             return hc;
         },
 
-        createChart : function(id,title) {
+        createChart : function(id) {
 
             var series = self.getChartConfig();
             var tickInterval = series[1].data.length <= (7*20) ? 7 : (series[1].data.length / 10);
@@ -374,7 +379,7 @@ Ext.define('CustomApp', {
                 style : {
                     fontSize: '10px'
                 },
-                text: title,
+                text: self.title,
                 x: -20 //center
                 },
                 plotOptions: {
@@ -407,7 +412,7 @@ Ext.define('CustomApp', {
                 },
                 yAxis: {
                     title: {
-                        text: 'count'
+                        text: self.unitType
                     },
                     plotLines: [{
                         value: 0,
