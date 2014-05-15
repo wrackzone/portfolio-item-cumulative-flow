@@ -9,7 +9,7 @@ Ext.define('CustomApp', {
 
 	config: {
 		defaultSettings: {
-			itemtype : 'Theme',
+			itemtype : 'Goal',
 			items : '', // TH2594
 			unittype : 'Count',
 			stateField : 'ScheduleState'
@@ -205,21 +205,41 @@ Ext.define('CustomApp', {
 			find : {
 				'_TypeHierarchy' : { "$in" : ["HierarchicalRequirement"] },
 				'_ItemHierarchy' : { "$in" : [parentId] },
-				'_ProjectHierarchy' : { "$in": [app.getContext().getProject().ObjectID] }
+				'_ProjectHierarchy' : { "$in": [app.getContext().getProject().ObjectID]},
+				'__At' : 'current',
+				'Children' : null
 			},
 			autoLoad : true,
 			pageSize:1000,
 			limit: 'Infinity',
-			fetch: ['ScheduleState','FormattedID','_UnformattedID','ObjectID','_TypeHierarchy','_ValidFrom','_ValidTo'],
-			hydrate: ['_TypeHierarchy','ScheduleState']
+			fetch: ['ObjectID'],
+			// hydrate: ['_TypeHierarchy','ScheduleState']
 		};
 
 		storeConfig.listeners = {
 			scope : this,
 			load: function(store, data, success) {
 				var data = _.pluck(data,"data");
-				// localStorage.setItem("snapshots1",JSON.stringify(data));
-				callback(null,data);
+				console.log("Outer Query Snapshots:",data.length);
+				var storyIds = _.pluck(data,"ObjectID");
+
+				var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
+					find : {
+						'ObjectID' : { "$in" : storyIds }
+					},
+					autoLoad : true,
+					pageSize:1000,
+					limit: 'Infinity',
+					fetch: ['ScheduleState','FormattedID','ObjectID','_ValidFrom','_ValidTo'],
+					hydrate: ['ScheduleState'],
+					listeners : {
+						scope : this,
+						load: function(store, data, success) {
+							console.log("Inner Query Snapshots:",data.length);
+							callback(null,_.pluck(data,"data"));
+						}
+					}
+				});
 			}
 		};
 		var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', storeConfig);

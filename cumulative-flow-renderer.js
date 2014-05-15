@@ -35,7 +35,6 @@ Ext.define("CumulativeFlowRenderer", function() {
                             filterValues : [state],
                         });
                     })
-                    console.log("metrics",metrics);
                     return metrics;
                 },
             });
