@@ -133,7 +133,7 @@ Ext.define("CumulativeFlowRenderer", function() {
                     },
                     series: {
                         marker: {
-                            radius: 2
+                            radius: 1
                         }
                     }
                 },

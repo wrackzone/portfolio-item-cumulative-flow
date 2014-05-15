@@ -20,8 +20,9 @@ Ext.define('CustomApp', {
 	config: {
 		defaultSettings: {
 			itemtype : 'Theme',
-			items : 'TH2594',
-			unittype : 'Count'
+			items : '', // TH2594
+			unittype : 'Count',
+			stateField : 'ScheduleState'
 		}
 	},
 
@@ -41,7 +42,13 @@ Ext.define('CustomApp', {
 				name: 'unittype',
 				xtype: 'rallytextfield',
 				label : "'Points' or 'Count'"
+			},
+			{
+				name: 'stateField',
+				xtype: 'rallytextfield',
+				label : "Story State Field"
 			}
+
 		];
 	},
 
@@ -50,23 +57,46 @@ Ext.define('CustomApp', {
 		console.log("launch");
 		app = this;
 
-		var items = app.getSetting('items').split(",");
+		app.portfolioItems = app.getSetting('items').split(",");
 		app.itemtype = app.getSetting('itemtype');
-		var unittype = app.getSetting('unittype');
+		app.stateField = app.getSetting('stateField');
+		app.unittype = app.getSetting('unittype');
 
-		items = items != "" ? items : ['I2921','I2912','I2968','I2962']; // ['F1123','F1217','F1215','F1220'];
-		if (items=="")
+		app.portfolioItems = app.portfolioItems != "" ? app.portfolioItems : [""]; // ['I2921','I2912','I2968','I2962']; // ['F1123','F1217','F1215','F1220'];
+		if (app.portfolioItems=="" || app.portfolioItems.length==0)
 			return;
 
+		Rally.data.ModelFactory.getModel({
+    		type: 'HierarchicalRequirement',
+    		scope : this,
+		    success: function(model) {
+		    	var store = model.getField(app.stateField).getAllowedValueStore();
+		    	store.load({
+		    		scope : this,
+		    		callback : function(records, operation, success) {
+				        app.fieldAllowedValues = _.map(records,function(r) {return r.get("StringValue")});
+				        console.log("Allowed Values:",app.fieldAllowedValues);
+				        app.createChart();
+    				}
+		    	});
+    		}
+    	});
+
+    	console.log("end launch");
+
+	},
+
+	createChart : function() {
+
 		// read the items
-		var configs = _.map( items,function(item) {
+		var configs = _.map( app.portfolioItems,function(item) {
 			return {
 				model : "PortfolioItem/" + app.itemtype,
 				fetch : ["FormattedID","ObjectID","Name","PlannedStartDate","PlannedEndDate"],
 				filters: [{ property : "FormattedID", operator : "=", value : item}]
 			};
 		});	
-
+		
 		app.myMask = new Ext.LoadMask(Ext.getBody(), {msg:"Please wait..."});
 		app.myMask.show();
 
@@ -75,19 +105,23 @@ Ext.define('CustomApp', {
 			var pis = _.map(results,function(r){ return r[0];});
 			console.log("pis",pis);
 
-			if (app.validateItems(items,pis)===false)
+			if (app.validateItems(app.portfolioItems,pis)===false)
 				return;
 
-			async.map( [items], app.snapshotquery, function(err,results) {
+			async.map( [pis], app.snapshotquery, function(err,results) {
 
 				console.log("snapshots",results[0].length);
+
+				var m = _.min(results[0],function(s) { return Rally.util.DateTime.fromIsoString(s["_ValidFrom"]);});
+				console.log("min:",m);
 
 				var renderer = Ext.create("CumulativeFlowRenderer", {
 					items : pis,
 					snapshots : results[0],
-		            stateField : "ScheduleState",
-            		states : ["Idea","Defined","In-Progress","Completed","Accepted","Released"],
-            		unitType : unittype,
+		            stateField : app.stateField,
+            		// states : ["Idea","Defined","In-Progress","Completed","Accepted","Released"],
+            		states : app.fieldAllowedValues,
+            		unitType : app.unittype,
 				});
 
 				var chart = app.down("#chart1");
@@ -163,28 +197,38 @@ Ext.define('CustomApp', {
 
 	snapshotquery : function(items,callback) {
 
+		var snaps = localStorage.getItem("snapshots1");
+		if ( snaps !== null) {
+			callback(null,JSON.parse(snaps));
+		}
+
 		// console.log(app.getContext().getProject().ObjectID);
 		console.log("Snapshotquery for Items",items);
 
+		var item  = items[0];
+		var parentId = item.get("ObjectID");
+		console.log("item:",item,parentId);
+
+		// only works for first item ---- fix!!
+
 		var storeConfig = {
 			find : {
-				'_TypeHierarchy' : { "$in" : ["PortfolioItem/"+app.itemtype] },
-				'FormattedID' : { "$in" : items },
+				'_TypeHierarchy' : { "$in" : ["HierarchicalRequirement"] },
+				'_ItemHierarchy' : { "$in" : [parentId] },
 				'_ProjectHierarchy' : { "$in": [app.getContext().getProject().ObjectID] }
 			},
 			autoLoad : true,
 			pageSize:1000,
 			limit: 'Infinity',
-			fetch: ['FormattedID','_UnformattedID','ObjectID','_TypeHierarchy','PreliminaryEstimate', 'LeafStoryCount','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal','AcceptedLeafStoryCount','PercentDoneByStoryCount','Name'],
-			hydrate: ['_TypeHierarchy']
+			fetch: ['ScheduleState','FormattedID','_UnformattedID','ObjectID','_TypeHierarchy','_ValidFrom','_ValidTo'],
+			hydrate: ['_TypeHierarchy','ScheduleState']
 		};
 
-		storeConfig.find['FormattedID'] = { "$in": items };
-		// storeConfig.find['_ProjectHierarchy'] = { "$in": this.project };
-		// storeConfig.find['_ValidTo'] = { "$gte" : isoStart  };
 		storeConfig.listeners = {
 			scope : this,
 			load: function(store, data, success) {
+				var data = _.pluck(data,"data");
+				localStorage.setItem("snapshots1",JSON.stringify(data));
 				callback(null,data);
 			}
 		};
@@ -239,7 +283,8 @@ Ext.define('CustomApp', {
         getChartConfig : function() {
 
             var lumenize = window.parent.Rally.data.lookback.Lumenize;
-            var snapShotData = _.map(self.snapshots,function(d){return d.data;});
+            // var snapShotData = _.map(self.snapshots,function(d){return d.data;});
+            var snapShotData = self.snapshots;
             var calc = self.getCalculator();
 
             var config = {
@@ -266,7 +311,7 @@ Ext.define('CustomApp', {
             _.each( _.map( calc.getMetrics(), function(m) { 
                 return {
                     name : m.as,
-                    type : "line",
+                    type : "area",
                     thetitle : m.thetitle
                 };
             }), function(c) { hcConfig.push(c);});
@@ -314,6 +359,9 @@ Ext.define('CustomApp', {
                 x: -20 //center
                 },
                 plotOptions: {
+                    area: {
+                        stacking: 'normal'
+                    },
                     line: {
                         events: { 
                             legendItemClick : 
@@ -323,7 +371,7 @@ Ext.define('CustomApp', {
                     },
                     series: {
                         marker: {
-                            radius: 2
+                            radius: 1
                         }
                     }
                 },

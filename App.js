@@ -10,7 +10,7 @@ Ext.define('CustomApp', {
 	config: {
 		defaultSettings: {
 			itemtype : 'Theme',
-			items : 'TH2594',
+			items : '', // TH2594
 			unittype : 'Count',
 			stateField : 'ScheduleState'
 		}
@@ -47,24 +47,46 @@ Ext.define('CustomApp', {
 		console.log("launch");
 		app = this;
 
-		var items = app.getSetting('items').split(",");
+		app.portfolioItems = app.getSetting('items').split(",");
 		app.itemtype = app.getSetting('itemtype');
 		app.stateField = app.getSetting('stateField');
-		var unittype = app.getSetting('unittype');
+		app.unittype = app.getSetting('unittype');
 
-		items = items != "" ? items : ['I2921','I2912','I2968','I2962']; // ['F1123','F1217','F1215','F1220'];
-		if (items=="")
+		app.portfolioItems = app.portfolioItems != "" ? app.portfolioItems : [""]; // ['I2921','I2912','I2968','I2962']; // ['F1123','F1217','F1215','F1220'];
+		if (app.portfolioItems=="" || app.portfolioItems.length==0)
 			return;
 
+		Rally.data.ModelFactory.getModel({
+    		type: 'HierarchicalRequirement',
+    		scope : this,
+		    success: function(model) {
+		    	var store = model.getField(app.stateField).getAllowedValueStore();
+		    	store.load({
+		    		scope : this,
+		    		callback : function(records, operation, success) {
+				        app.fieldAllowedValues = _.map(records,function(r) {return r.get("StringValue")});
+				        console.log("Allowed Values:",app.fieldAllowedValues);
+				        app.createChart();
+    				}
+		    	});
+    		}
+    	});
+
+    	console.log("end launch");
+
+	},
+
+	createChart : function() {
+
 		// read the items
-		var configs = _.map( items,function(item) {
+		var configs = _.map( app.portfolioItems,function(item) {
 			return {
 				model : "PortfolioItem/" + app.itemtype,
 				fetch : ["FormattedID","ObjectID","Name","PlannedStartDate","PlannedEndDate"],
 				filters: [{ property : "FormattedID", operator : "=", value : item}]
 			};
 		});	
-
+		
 		app.myMask = new Ext.LoadMask(Ext.getBody(), {msg:"Please wait..."});
 		app.myMask.show();
 
@@ -73,7 +95,7 @@ Ext.define('CustomApp', {
 			var pis = _.map(results,function(r){ return r[0];});
 			console.log("pis",pis);
 
-			if (app.validateItems(items,pis)===false)
+			if (app.validateItems(app.portfolioItems,pis)===false)
 				return;
 
 			async.map( [pis], app.snapshotquery, function(err,results) {
@@ -87,8 +109,9 @@ Ext.define('CustomApp', {
 					items : pis,
 					snapshots : results[0],
 		            stateField : app.stateField,
-            		states : ["Idea","Defined","In-Progress","Completed","Accepted","Released"],
-            		unitType : unittype,
+            		// states : ["Idea","Defined","In-Progress","Completed","Accepted","Released"],
+            		states : app.fieldAllowedValues,
+            		unitType : app.unittype,
 				});
 
 				var chart = app.down("#chart1");
@@ -191,9 +214,6 @@ Ext.define('CustomApp', {
 			hydrate: ['_TypeHierarchy','ScheduleState']
 		};
 
-		// storeConfig.find['FormattedID'] = { "$in": items };
-		// storeConfig.find['_ProjectHierarchy'] = { "$in": this.project };
-		// storeConfig.find['_ValidTo'] = { "$gte" : isoStart  };
 		storeConfig.listeners = {
 			scope : this,
 			load: function(store, data, success) {
