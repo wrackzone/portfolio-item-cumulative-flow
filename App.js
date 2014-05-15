@@ -187,10 +187,10 @@ Ext.define('CustomApp', {
 
 	snapshotquery : function(items,callback) {
 
-		var snaps = localStorage.getItem("snapshots1");
-		if ( snaps !== null) {
-			callback(null,JSON.parse(snaps));
-		}
+		// var snaps = localStorage.getItem("snapshots1");
+		// if ( snaps !== null) {
+		// 	callback(null,JSON.parse(snaps));
+		// }
 
 		// console.log(app.getContext().getProject().ObjectID);
 		console.log("Snapshotquery for Items",items);
@@ -218,7 +218,7 @@ Ext.define('CustomApp', {
 			scope : this,
 			load: function(store, data, success) {
 				var data = _.pluck(data,"data");
-				localStorage.setItem("snapshots1",JSON.stringify(data));
+				// localStorage.setItem("snapshots1",JSON.stringify(data));
 				callback(null,data);
 			}
 		};
