@@ -1,3 +1,5 @@
+// Author: Barry Mullan (bmullan@rallydev.com)
+
 var app = null;
 
 Ext.define('CustomApp', {
