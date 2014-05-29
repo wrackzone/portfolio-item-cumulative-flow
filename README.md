@@ -2,7 +2,7 @@ portfolio-item-cumulative-flow
 =========================
 
 ## Overview
-
+A version of the portfolio item cumulative flow chart that includes the full (including from before the portfolio item was created) status of stories that are currently associated with the portfolio item.
 
 ## License
 
