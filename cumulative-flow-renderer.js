@@ -51,6 +51,16 @@ Ext.define("CumulativeFlowRenderer", function() {
             var calc = self.getCalculator();
             var metrics = calc.getMetrics();
 
+            var jan1 = moment("1/1/2014");
+            var firstDay = _.filter(snapShotData,function(s){
+                return (jan1 >= moment(s["_ValidFrom"]) && 
+                        jan1 < moment(s["_ValidTo"]));
+            });
+            console.log("first day snaps");
+            console.log(_.map(firstDay,function(f) {
+                return f["FormattedID"] + "\t" + f["ScheduleState"] + "\t" + f["PlanEstimate"];
+            }));
+
             var config = {
                 deriveFieldsOnInput: [],
                 metrics: metrics,
@@ -75,7 +85,7 @@ Ext.define("CumulativeFlowRenderer", function() {
             _.each( _.map( metrics, function(m) { 
                 return {
                     name : m.as,
-                    type : "area",
+                    type : 'area',
                     thetitle : m.thetitle
                 };
             }), function(c) { hcConfig.push(c);});

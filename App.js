@@ -11,9 +11,9 @@ Ext.define('CustomApp', {
 
 	config: {
 		defaultSettings: {
-			itemtype : 'Theme',
-			items : 'TH2594', // TH2594
-			unittype : 'Points',
+			itemtype : 'Goal',
+			items : 'G1076', // TH2594
+			unittype : 'Count',
 			stateField : 'ScheduleState'
 		}
 	},
@@ -215,8 +215,9 @@ Ext.define('CustomApp', {
 			autoLoad : true,
 			pageSize:1000,
 			limit: 'Infinity',
-			fetch: ['ObjectID'],
-			// hydrate: ['_TypeHierarchy','ScheduleState']
+			// fetch: ['ObjectID'],
+			fetch: ['ScheduleState','FormattedID','ObjectID','_ValidFrom','_ValidTo','PlanEstimate'],
+			hydrate: ['ScheduleState'],
 		};
 
 		storeConfig.listeners = {

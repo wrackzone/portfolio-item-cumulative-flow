@@ -4,7 +4,8 @@
     <title>portfolio-item-cumulative-flow</title>
 
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
-    <script type="text/javascript" src="https://rally1.rallydev.com/apps/2.0rc1/lib/analytics/analytics-all.js"></script>
+    <script type="text/javascript" src="https://rally1.rallydev.com/apps/2.0rc2/lib/analytics/analytics-all.js"></script>
+    <script type="text/javascript" src="http://momentjs.com/downloads/moment.min.js"></script>
 
     <script type="text/javascript">
         Rally.onReady(function () {
@@ -21,9 +22,9 @@ Ext.define('CustomApp', {
 
 	config: {
 		defaultSettings: {
-			itemtype : 'Theme',
-			items : 'TH2594', // TH2594
-			unittype : 'Points',
+			itemtype : 'Goal',
+			items : 'G1076', // TH2594
+			unittype : 'Count',
 			stateField : 'ScheduleState'
 		}
 	},
@@ -336,7 +337,7 @@ Ext.define('CustomApp', {
             _.each( _.map( metrics, function(m) { 
                 return {
                     name : m.as,
-                    type : "area",
+                    type : 'area',
                     thetitle : m.thetitle
                 };
             }), function(c) { hcConfig.push(c);});
